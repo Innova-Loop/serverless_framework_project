@@ -78,3 +78,5 @@ jobs:
           scriptType: 'inline'
           inlineScript: |
             $(WORKING_DIRECTOTY)/node_modules/.bin/sls deploy --region $(LAMBDA_REGION) --stage $(STAGE) --param "db_identifier=$(DB_IDENTIFIER)" --param "db_region=$(DB_REGION)" --param "shared_account=$(SHARED_ACCOUNT)"
+
+
