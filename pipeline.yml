@@ -3,16 +3,15 @@ name: Serverless Framework Pipeline
 trigger:
   branches:
     include:
-      - test
-      - lambda
+      - serverless_framework
 
 pool:
   vmImage: ubuntu-latest
 
 variables:
   - name: targetEnvironment
-    ${{ if startsWith(variables['build.sourceBranch'], 'refs/heads/lambda') }}:
-      value: 'dev'
+    ${{ if startsWith(variables['build.sourceBranch'], 'refs/heads/serverless_framework') }}:
+      value: 'legacy_prd'
   - group: '${{variables.targetEnvironment}} environment variables'
   - name: NPM_CACHE_KEY_PATH
     value: $(Build.SourcesDirectory)/aws-python-scheduled-cron-project/package-lock.json
@@ -22,7 +21,7 @@ variables:
     value: $(Build.SourcesDirectory)/aws-python-scheduled-cron-project/requirements.txt
   - name: PIP_CACHE_PATH
     value: $(Build.SourcesDirectory)/aws-python-scheduled-cron-project/.pyenv
-  - name: WORKING_DIRECTOTY
+  - name: WORKING_DIRECTORY
     value: 'aws-python-scheduled-cron-project'
 
     
@@ -42,14 +41,14 @@ jobs:
           restoreKeys: |
             npm | "$(Agent.OS)"
           path: $(NODE_MODULES_PATH)
-          # cacheHitVar: NODE_MODULES_CACHE_RESTORED 
+          cacheHitVar: NODE_MODULES_CACHE_RESTORED 
       
       - task: Npm@1
         displayName: Install NPM dependencies for the project
         inputs:
           command: 'install'
-          workingDir: '$(WORKING_DIRECTOTY)'
-        # condition: ne(variables.NODE_MODULES_CACHE_RESTORED, 'true')
+          workingDir: '$(WORKING_DIRECTORY)'
+        condition: ne(variables.NODE_MODULES_CACHE_RESTORED, 'true')
 
       - task: Cache@2
         displayName: Cache pip packages
@@ -58,18 +57,18 @@ jobs:
           restoreKeys: | 
             python | "$(Agent.OS)"
           path: $(PIP_CACHE_PATH)
-          # cacheHitVar: PIP_CACHE_RESTORED
+          cacheHitVar: PIP_CACHE_RESTORED
 
       - task: Bash@3
         displayName: Install Python dependencies for the project
         inputs:
           targetType: 'inline'
-          workingDirectory: '$(WORKING_DIRECTOTY)'
+          workingDirectory: '$(WORKING_DIRECTORY)'
           script: |
             python3 -m venv .pyenv
             source .pyenv/bin/activate
             pip install -r requirements.txt
-        # condition: ne(variables.PIP_CACHE_RESTORED, 'true')
+        condition: ne(variables.PIP_CACHE_RESTORED, 'true')
         
       - task: AWSShellScript@1
         displayName: Deploy Lambda
@@ -77,6 +76,6 @@ jobs:
           awsCredentials: '$(AWS_CREDENTIALS)'
           scriptType: 'inline'
           inlineScript: |
-            $(WORKING_DIRECTOTY)/node_modules/.bin/sls deploy --region $(LAMBDA_REGION) --stage $(STAGE) --param "db_identifier=$(DB_IDENTIFIER)" --param "db_region=$(DB_REGION)" --param "shared_account=$(SHARED_ACCOUNT)"
+            $(WORKING_DIRECTORY)/node_modules/.bin/sls deploy --region $(LAMBDA_REGION) --stage $(STAGE) --param "email_1=$(EMAIL_1)" --param "db_identifier=$(DB_IDENTIFIER)" --param "db_region=$(DB_REGION)" --param "shared_account=$(SHARED_ACCOUNT)"
 
 

@@ -8,7 +8,7 @@ plugins:
 custom:
   datadog:
     site: datadoghq.com
-    apiKeySecretArn: ${ssm:/aws/reference/secretsmanager/secret_ID_in_Secrets_Manager}
+    apiKeySecretArn: ${ssm:/ServerlessFrameworkLambda/DD_API_KEY_SECRET_ARN}
 
 provider:
   name: aws
@@ -34,11 +34,10 @@ provider:
           Resource: !Join [':', ['arn:aws:sns', !Ref AWS::Region, !Ref AWS::AccountId, !GetAtt RdsSnapshotNotifications.TopicName]]
   vpc:
     securityGroupIds:
-      - ${ssm:/DevTools/VPC_DEFAULT_SG}
+      - ${ssm:/ServerlessFrameworkLambda/VPC_DEFAULT_SG}
     subnetIds:
-      - ${ssm:/DevTools/SUBNET_1}
-      - ${ssm:/DevTools/SUBNET_2}
-      - ${ssm:/DevTools/SUBNET_3}
+      - ${ssm:/ServerlessFrameworkLambda/PRIVATE_SUBNET_1}
+      - ${ssm:/ServerlessFrameworkLambda/PRIVATE_SUBNET_2}
   
 functions:
   rdsSnapshot:
@@ -63,3 +62,6 @@ resources:
       Type: AWS::SNS::Topic
       Properties: 
         TopicName: !Join [ "", [ '${sls:stage}', !Ref AWS::Region, 'RdsSnapshotNotifications']]
+        Subscription: 
+          - Endpoint: ${param:email_1}
+            Protocol: email
